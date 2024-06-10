@@ -1,5 +1,5 @@
 ## A program to simulate the process of matric decomposition
-## Just considerring the Strassen first
+## Just considerring the Strassen first  (finished)
 import numpy as np
 
 class Decompositor:
@@ -29,6 +29,10 @@ class Decompositor:
         w = np.random.choice(self.F, self.size)
         self.actions.append((u,v,w))
         return (u,v,w)
+    def get_valid_moves(self, n):
+        ## sample moves with number n
+        moves = [self.get_valid_move() for i in range(n)]
+        return moves
     def check_win(self, state):
         ## check whether the state equalling 0 tensor
         return np.all(state == 0)
@@ -44,6 +48,8 @@ class Decompositor:
         assert len(shape) == 3, "program to only request the rank of 3-d tensor"
         ranks = [np.linalg.matrix_rank(state[:, :, i]) for i in range(shape[2])]
         return max(ranks)
+    def is_terminated(self):
+        return len(self.actions) >= self.R_limit
 
 
 
