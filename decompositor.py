@@ -1,15 +1,18 @@
-## A program to simulate the process of matric decomposition
+## A program to simulate the process of matric decomposition at sampled actions
 ## Just considerring the Strassen first  (finished)
 import numpy as np
+import random
+from SampleActions import generate_unique_samples
 
 class Decompositor:
-    def __init__(self):
+    def __init__(self, num_samples:int=100):
         self.n = 2  # T_{m,n,p} with m=n=p=2
         self.size = self.n * self.n  # the size of T2
-        self.F = (-1,0,1)  # the only coefficient to be used
+        self.F = (-1,0,1)  # the only element to be used
         self.gamma = 1  # upper bound
-        self.R_limit = self.n ** 3  # the max rank of the matric we need
-        self.actions = []
+        self.R_limit = self.n ** 3 + 2  # the max step
+        self.num_samples = num_samples
+        self.sampled_actions = generate_unique_samples(self.size, num_samples, self.F)
     def get_initial_state(self):
         ## classic strassen's program
         state0 = np.zeros((self.size, self.size, self.size))
@@ -24,11 +27,7 @@ class Decompositor:
         return state
     def get_valid_move(self):
         ## the policy to choose move, firstly at random because of not study
-        u = np.random.choice(self.F, self.size)
-        v = np.random.choice(self.F, self.size)
-        w = np.random.choice(self.F, self.size)
-        self.actions.append((u,v,w))
-        return (u,v,w)
+        return random.choice(self.sampled_actions)
     def get_valid_moves(self, n):
         ## sample moves with number n
         moves = [self.get_valid_move() for i in range(n)]
@@ -39,8 +38,6 @@ class Decompositor:
     def get_value_and_terminated(self, state):
         if self.check_win(state):
             return 1, True
-        if len(self.actions) >= self.R_limit:
-            return -self.rank(state), True
         return -1, False
     def rank(self, state):
         ## a vague program to request the rank of 3-d tensor
@@ -48,24 +45,30 @@ class Decompositor:
         assert len(shape) == 3, "program to only request the rank of 3-d tensor"
         ranks = [np.linalg.matrix_rank(state[:, :, i]) for i in range(shape[2])]
         return max(ranks)
-    def is_terminated(self):
-        return len(self.actions) >= self.R_limit
-
 
 
 if __name__ == "__main__":
-    robot = Decompositor()
+    num_samples = 100
+    robot = Decompositor(num_samples)
     state = robot.get_initial_state()
+    print(f"state0:\n", state)
+    t = 0
     # s1 = robot.get_next_state(s0, robot.get_valid_move())
     # print(s1, robot.check_win(s1), robot.get_value_and_terminated(s1))
-    count = 0
-    while True:
-        print(f"state{count}:\n", state,robot.get_value_and_terminated(state))
-        count += 1
+    while t < robot.R_limit:
         action = robot.get_valid_move()
         state = robot.get_next_state(state, action)
+        t += 1
         value, is_terminal = robot.get_value_and_terminated(state)
         if is_terminal:
-            print("The terminated state:\n", state, robot.get_value_and_terminated(state))
+            print("Success!!!")
             break
+        print(f"S{t},repay={value}:\n", state)
+    else:
+        extra_repay = -robot.rank(state)
+        print(extra_repay)
+
+
+        
+        
         
