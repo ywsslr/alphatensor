@@ -4,6 +4,11 @@ import numpy as np
 import random
 from SampleActions import generate_unique_samples
 
+# set the random seed 
+seed = 42
+np.random.seed(seed)
+random.seed(seed)
+
 class Decompositor:
     def __init__(self, num_samples:int=100):
         self.n = 2  # T_{m,n,p} with m=n=p=2
@@ -35,9 +40,11 @@ class Decompositor:
     def check_win(self, state):
         ## check whether the state equalling 0 tensor
         return np.all(state == 0)
-    def get_value_and_terminated(self, state):
+    def get_value_and_terminated(self, state, t):
         if self.check_win(state):
             return 1, True
+        if t >= self.R_limit:
+            return -1 - self.rank(state), True
         return -1, False
     def rank(self, state):
         ## a vague program to request the rank of 3-d tensor
@@ -59,16 +66,8 @@ if __name__ == "__main__":
         action = robot.get_valid_move()
         state = robot.get_next_state(state, action)
         t += 1
-        value, is_terminal = robot.get_value_and_terminated(state)
+        value, is_terminal = robot.get_value_and_terminated(state, t)
         if is_terminal:
-            print("Success!!!")
+            print(f"S{t},repay={value}:\n", state)
             break
         print(f"S{t},repay={value}:\n", state)
-    else:
-        extra_repay = -robot.rank(state)
-        print(extra_repay)
-
-
-        
-        
-        
