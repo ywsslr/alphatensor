@@ -4,8 +4,10 @@ used to replicate the [AlphaTensor](https://www.nature.com/articles/s41586-022-0
 It's the project to learn and replicate the RL robot
 
 ## Helpful Resources
-[AlphaZeroFromScratch](https://github.com/foersterrobert/AlphaZeroFromScratch)
+[AlphaZeroFromScratch](https://github.com/foersterrobert/AlphaZeroFromScratch) 
+
 [nebuly](https://github.com/nebuly-ai/nebuly/)
+
 [First Open Source Implementation of DeepMind’s AlphaTensor](https://www.kdnuggets.com/2023/03/first-open-source-implementation-deepmind-alphatensor.html)
 
 ## reference:
