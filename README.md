@@ -1,7 +1,18 @@
 # AlphaTensor
-used to replicate the [AlphaTensor](https://www.nature.com/articles/s41586-022-05172-4)
+The **AlphaTensor project**, inspired by AlphaZero, aims to decompose specific tensors into rank-1 tensors (CP rank). This decomposition can be utilized in fast matrix multiplication algorithms 
+![alt text](./image/alphatensor.png)
 
-It's the project to learn and replicate the RL robot
+**Implementing AlphaTensor relies mainly on two components:**  
+1.A neural network that takes input state information (specific tensor) and outputs the corresponding policy and value.  
+2.Monte Carlo Tree Search (MCTS) guided by the neural network.
+
+**The main steps to implement AlphaTensor (similar to AlphaZero):**  
+1.Generate a dataset using MCTS under the guidance of the old neural network. Due to the specific nature of the AlphaTensor task, we can generate a large dataset ourselves (as is well known, tensor decomposition into rank-1 matrices is difficult, but assembling a tensor from many rank-1 matrices is simple; we just need to perform summation operations).  
+2.Train the old neural network on the generated dataset to produce a new neural network.  
+3.Evaluate whether the new neural network is better than the old one. If so, return to the first step and continue self-reinforcement learning.
+
+
+
 
 ## Helpful Resources
 [AlphaZeroFromScratch](https://github.com/foersterrobert/AlphaZeroFromScratch) 
