@@ -30,4 +30,4 @@ The **AlphaTensor project**, inspired by AlphaZero, aims to decompose specific t
 
 [Mastering the game of Go with deep neural networks and tree search](https://www.nature.com/articles/nature16961)
 
-
+**Since this is my first time implementing a large-scale reinforcement learning algorithm, most of the code comes from the [nebuly](https://github.com/nebuly-ai/nebuly/) .**
