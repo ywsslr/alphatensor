@@ -1,19 +1,31 @@
 from modules.alpha_tensor import AlphaTensorModel
 import torch
 from modules.heads import PolicyHead, ValueHead
-from actor.stage import monte_carlo_tree_search, actor_prediction
+from actor.stage import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+def generate_init_state(tensor_length):
+    size = 4
+    n=2
+    state0 = torch.zeros((size, size, size))
+    state0[0,0:n,0:n] = torch.eye(n)
+    state0[1,n:2*n,0:n] = torch.eye(n)
+    state0[2,0:n,n:2*n] = torch.eye(n)
+    state0[3,n:2*n,n:2*n] = torch.eye(n)
+    history = tensor_length - 1
+    return torch.cat((state0.reshape(1,1,size,size,size),torch.zeros((1,history, size,size,size))),dim=1)
+
 
 def test_alpha_tensor():
     # init the model
     matrix_size = 2
-    tensor_length = 3 
+    tensor_length = 5
     input_size = matrix_size ** 2
     scalar_size = 1
     emb_dim = 256
     n_steps = 3
-    n_actions = 3 ** (3 * input_size // n_steps)
+    n_actions = 5 ** (3 * input_size // n_steps)
     n_logits = n_actions
     n_samples = 32
     alphatensor = AlphaTensorModel(
@@ -77,21 +89,49 @@ def test_heads():
     # print(v.shape)
 
 def test_mcts():
+    torch.manual_seed(42)
     alphatensor = test_alpha_tensor().to(device)
-    state = torch.randint(-2,2,size=(1,3,4,4,4)).to(device)
+    # state = torch.randint(-2,2,size=(1,5,4,4,4)).to(device)
+    state = generate_init_state(5)
+
     # # actions
     # actions = actor_prediction(
     #     alphatensor, input_tensor=state,
-    #     maximum_rank=10, mc_n_sim=200,
+    #     maximum_rank=8, mc_n_sim=200,
     #     N_bar=100, return_actions=True
     # )
-    # states, policies, rewards
-    states, policies, rewards = actor_prediction(
-        alphatensor, input_tensor=state,
-        maximum_rank=8, mc_n_sim=200,
-        N_bar=100
+    # print(actions)
+    # print(len(actions))
+    # print(actions[0])
+
+    # # states, policies, rewards
+    # states, policies, rewards = actor_prediction(
+    #     alphatensor, input_tensor=state,
+    #     maximum_rank=8, mc_n_sim=200,
+    #     N_bar=100
+    # )
+    # print(states, policies, rewards)
+    
+
+    # MCTS
+    rank = 0
+    game_tree = {}
+    state_dict = {}
+    hash_states = []
+    states = []
+    states.append(state)
+    hash_states.append(to_hash(extract_present_state(state)))
+    state = monte_carlo_tree_search(
+        alphatensor,
+        state,
+        50,
+        rank,
+        8,
+        game_tree,
+        state_dict,
     )
-    print(states, policies, rewards)
+    print(state)
+    print(state.shape)
 
 
 if __name__ == "__main__":
@@ -99,4 +139,7 @@ if __name__ == "__main__":
     # test_alpha_tensor()
     # test_heads()
     test_mcts()
+
+    # init_state = generate_init_state(5)
+    # print(init_state)
 

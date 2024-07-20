@@ -1,10 +1,11 @@
 from typing import Dict, List
-
+import tqdm
 import torch
 
 from data.utils import (
     get_scalars,
     map_action_to_triplet,
+    _single_action_to_triplet
 )
 from modules.alpha_tensor import AlphaTensorModel
 
@@ -86,15 +87,15 @@ def extract_children_states_from_actions(
         bs, k, 1, vec_dim, 1
     )
     w = actions[:, :, 2 * vec_dim :].reshape(bs, k, 1, 1, vec_dim)  # noqa E203
-    reducing_tensor = u * v * w
+    reducing_tensor = u * v * w  # tensor product
     (
         reducing_tensor,
         old_idx_to_new_idx,
         repetition_map,
         not_duplicate_indexes,
     ) = remove_duplicates(reducing_tensor)
-    old_state = state[:, 0]
-    new_state = old_state.unsqueeze(1) - reducing_tensor
+    old_state = state[:, 0].clone()  # clone !!!就算tensor切片被赋值给另一个变量,两者也同时变!!!
+    new_state = old_state.unsqueeze(1) - reducing_tensor  # new state
     rolling_states = torch.roll(state, 1)[:, 2:]
     return (
         [
@@ -263,27 +264,31 @@ def simulate_game(
         state_idx = select_future_state(
             possible_states, q_values, N_s_a, repetition_map, return_idx=True
         )
-        trajectory.append((state_hash, state_idx))  # state_hash, action_idx
         future_state = extract_present_state(possible_states[state_idx])
+        # an extra judgement???  如果选出的新状态与旧状态相同,在网络没更新的状态下会陷入
+        # 无限循环
+        if to_hash(future_state) == state_hash:
+            break
+        trajectory.append((state_hash, state_idx))  # state_hash, action_idx
         state = possible_states[state_idx]
         state_hash = to_hash(future_state)
         idx += 1
 
-    # expansion
+    # expansion  处理当前叶子结点
     if idx <= max_steps:
         trajectory.append((state_hash, None))
         if not game_is_finished(extract_present_state(state)):
             state = state.to(model.device)
             scalars = get_scalars(state, idx).to(state.device)
-            actions, probs, q_values = model(state, scalars)
+            actions, probs, q_values = model(state, scalars)  ## 为何不用网络的pi???
             (
                 possible_states,
                 cloned_idx_to_idx,
                 repetitions,
                 not_dupl_indexes,
             ) = extract_children_states_from_actions(
-                state,
-                actions,
+                state.clone(),
+                actions.clone(),  # 一定要是复制品进去!!否则程序会更改动作
             )
             not_dupl_actions = actions[:, not_dupl_indexes].to("cpu")
             not_dupl_q_values = torch.zeros(not_dupl_actions.shape[:-1]).to(
@@ -304,6 +309,9 @@ def simulate_game(
                 for fut_state in possible_states
             ]
             leaf_q_value = q_values
+        else:
+            # 游戏取得胜利  ??
+            leaf_q_value = 10  # 加大奖励度??
     else:
         leaf_q_value = -int(torch.linalg.matrix_rank(state).sum())
     # backup
@@ -371,7 +379,7 @@ def monte_carlo_tree_search(
             n_sim -= int(N_s_a.sum())
             n_sim = max(n_sim, 0)
 
-    for _ in range(n_sim):
+    for _ in tqdm.tqdm(range(n_sim)):
         simulate_game(model, state, t_time, n_steps, game_tree, state_dict)
     # return next state
     possible_states_dict, _, repetitions, N_s_a, q_values, _ = state_dict[
@@ -439,11 +447,11 @@ def actor_prediction(
     # input_tensor has shape (1, T, S, S, S)
     state = input_tensor
     rank = 0
-    game_tree = {}
     state_dict = {}
     hash_states = []
     states = []
     while rank < maximum_rank:
+        game_tree = {}  # 每次mcts搜索都要重新建树
         states.append(state)
         hash_states.append(to_hash(extract_present_state(state)))
         state = monte_carlo_tree_search(
