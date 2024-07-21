@@ -33,7 +33,7 @@ def map_triplet_to_action(
     Args:
         triplet (Tuple[torch.Tensor, torch.Tensor, torch.Tensor]): Triplet of
         tensors u, v, and w.
-        base (int): Base used for the conversion.
+        base (int): Base used for the conversion. 一般默认是5
         n_steps (int): Number of steps in the action.
         add_bias (bool, optional): Whether to add a bias to the action.
     """
@@ -54,42 +54,40 @@ def map_triplet_to_action(
     )
     action = action.sum(dim=-1)
     return action
-
-
-# # @torch.jit.script
-# def _single_action_to_triplet(
-#     action_val: int,
-#     basis: int,
-#     out_dim: int,
-#     bias: int,
-#     device: str,
-# ):     
-#     """Converts an action to the original triplet (u, v, w) that generated it.
-#     Args:
-#         action_val (int): Action to convert.
-#         basis (int): Basis used for the conversion.
-#         out_dim (int): Output dimension.
-#         bias (int): Bias to subtract from the action.
-#         device (str): Name of the torch device to use.
-#     Old version, should be changed???
-#     """
-#     triplet = torch.zeros(out_dim).to(device)
-#     if action_val > 0:
-#         idx = int(
-#             torch.log(torch.tensor(action_val))
-#             // torch.log(torch.tensor(basis))
-#         )
-#     else:
-#         idx = 0
-#     while idx >= 0:
-#         temp = int(basis**idx)
-#         triplet[idx] = action_val // temp - bias
-#         action_val = action_val - temp
-#         idx -= 1
-#     return triplet
-
-
-
+   
+'''
+# @torch.jit.script
+def _single_action_to_triplet(
+    action_val: int,
+    basis: int,
+    out_dim: int,
+    bias: int,
+    device: str,
+):     
+    """Converts an action to the original triplet (u, v, w) that generated it.
+    Args:
+        action_val (int): Action to convert.
+        basis (int): Basis used for the conversion.
+        out_dim (int): Output dimension.
+        bias (int): Bias to subtract from the action.
+        device (str): Name of the torch device to use.
+    Old version, should be changed???
+    """
+    triplet = torch.zeros(out_dim).to(device)
+    if action_val > 0:
+        idx = int(
+            torch.log(torch.tensor(action_val))
+            // torch.log(torch.tensor(basis))
+        )
+    else:
+        idx = 0
+    while idx >= 0:
+        temp = int(basis**idx)
+        triplet[idx] = action_val // temp - bias
+        action_val = action_val - temp
+        idx -= 1
+    return triplet
+'''
 
 # @torch.jit.script
 def _single_action_to_triplet(
@@ -112,7 +110,8 @@ def _single_action_to_triplet(
     triplet = torch.zeros(out_dim).to(device)
     if not (0 <= action_val < basis**out_dim):
         raise ValueError(f"value must be in range [0, {basis**out_dim - 1}]")
-    for i in range(out_dim - 1, -1, -1):
+    # for i in range(out_dim - 1, -1, -1):
+    for i in range(out_dim):
         triplet[i] = (action_val % basis) - bias
         action_val //= basis
     return triplet
@@ -155,3 +154,23 @@ def map_action_to_triplet(
     )
     final_size = triplets.shape[-1]
     return triplets.reshape((*action_shape, final_size))
+
+
+if __name__ == "__main__":
+    # map_action_to_triplet
+    action_tensor = torch.randint(0,624,(12,3))
+    action_tensor = torch.tensor([
+        [0,1,2],
+        [10,20,30]
+    ])
+    cardinality = 5
+    vector_size = 4
+    triplets = map_action_to_triplet(action_tensor, cardinality, vector_size)
+    print(triplets)
+    print(triplets.shape)
+
+    # # map_triplet_to_action
+    # triplet = (torch.tensor([ -2,  -2, -2,  -2]), torch.tensor([ -2, -2,  -2,  -1]), torch.tensor([-2, -2, 0, -2]))
+    # base = 5
+    # actions = map_triplet_to_action(triplet, base, 3)
+    # print(actions)
