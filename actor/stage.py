@@ -251,7 +251,7 @@ def simulate_game(
     state_hash = to_hash(extract_present_state(state))
     trajectory = []
     # selection
-    while state_hash in game_tree:
+    while state_hash in game_tree and idx <= max_steps:
         (
             possible_states_dict,
             old_idx_to_new_idx,
@@ -379,7 +379,7 @@ def monte_carlo_tree_search(
             n_sim -= int(N_s_a.sum())
             n_sim = max(n_sim, 0)
 
-    for _ in tqdm.tqdm(range(n_sim)):
+    for _ in range(n_sim):
         simulate_game(model, state, t_time, n_steps, game_tree, state_dict)
     # return next state
     possible_states_dict, _, repetitions, N_s_a, q_values, _ = state_dict[

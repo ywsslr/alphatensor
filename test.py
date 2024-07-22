@@ -23,7 +23,7 @@ def test_alpha_tensor():
     tensor_length = 5
     input_size = matrix_size ** 2
     scalar_size = 1
-    emb_dim = 256
+    emb_dim = 512
     n_steps = 3
     n_actions = 5 ** (3 * input_size // n_steps)
     n_logits = n_actions
@@ -37,21 +37,21 @@ def test_alpha_tensor():
         n_logits=n_logits,
         n_samples=n_samples 
     )
-    # # simulation
-    # N = 12
-    # x = torch.randint(-1,1,(N,tensor_length,input_size,input_size,input_size),dtype=torch.float32)  # states
-    # s = torch.randint(0,10,(N,scalar_size),dtype=torch.float32)  # scalars
+    # simulation
+    N = 12
+    x = torch.randint(-1,1,(N,tensor_length,input_size,input_size,input_size),dtype=torch.float32)  # states
+    s = torch.randint(0,10,(N,scalar_size),dtype=torch.float32)  # scalars
     # # eval
     # a, p, q = alphatensor(x,s)
     # print(a,p,q)
     # print(a.shape,p.shape,q.shape)
 
-    # # train
-    # g_action = torch.randint(0,n_logits-1,size=(N,n_steps),dtype=torch.long)
-    # g_value = torch.randn(size=(N,1),dtype=torch.float32)
-    # # g_value = g_value.expand((-1,8))
-    # l_policy, l_value = alphatensor(x,s,g_action,g_value)
-    # print(l_policy,l_value)
+    # train
+    g_action = torch.randint(0,n_logits-1,size=(N,n_steps),dtype=torch.long)
+    g_value = torch.randn(size=(N,1),dtype=torch.float32)
+    # g_value = g_value.expand((-1,8))
+    l_policy, l_value = alphatensor(x,s,g_action,g_value)
+    print(l_policy,l_value)
     return alphatensor
 
 def test_heads():
@@ -94,15 +94,15 @@ def test_mcts():
     # state = torch.randint(-2,2,size=(1,5,4,4,4)).to(device)
     state = generate_init_state(5)
 
-    # # actions
-    # actions = actor_prediction(
-    #     alphatensor, input_tensor=state,
-    #     maximum_rank=8, mc_n_sim=200,
-    #     N_bar=100, return_actions=True
-    # )
-    # print(actions)
-    # print(len(actions))
-    # print(actions[0])
+    # actions
+    actions = actor_prediction(
+        alphatensor, input_tensor=state,
+        maximum_rank=8, mc_n_sim=50,
+        N_bar=100, return_actions=True
+    )
+    print(actions)
+    print(len(actions))
+    print(actions[0])
 
     # # states, policies, rewards
     # states, policies, rewards = actor_prediction(
@@ -113,32 +113,32 @@ def test_mcts():
     # print(states, policies, rewards)
     
 
-    # MCTS
-    rank = 0
-    game_tree = {}
-    state_dict = {}
-    hash_states = []
-    states = []
-    states.append(state)
-    hash_states.append(to_hash(extract_present_state(state)))
-    state = monte_carlo_tree_search(
-        alphatensor,
-        state,
-        50,
-        rank,
-        8,
-        game_tree,
-        state_dict,
-    )
-    print(state)
-    print(state.shape)
+    # # MCTS
+    # rank = 0
+    # game_tree = {}
+    # state_dict = {}
+    # hash_states = []
+    # states = []
+    # states.append(state)
+    # hash_states.append(to_hash(extract_present_state(state)))
+    # state = monte_carlo_tree_search(
+    #     alphatensor,
+    #     state,
+    #     50,
+    #     rank,
+    #     8,
+    #     game_tree,
+    #     state_dict,
+    # )
+    # print(state)
+    # print(state.shape)
 
 
 if __name__ == "__main__":
     # test this code
-    # test_alpha_tensor()
+    test_alpha_tensor()
     # test_heads()
-    test_mcts()
+    # test_mcts()
 
     # init_state = generate_init_state(5)
     # print(init_state)

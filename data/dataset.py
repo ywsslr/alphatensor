@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import List, Tuple
+import tqdm
 
 import numpy as np
 import torch
@@ -67,8 +68,9 @@ class SyntheticDataBuffer(Dataset):
         Path(self.save_dir).mkdir(parents=True, exist_ok=True)
         number_of_triplets = len(list(Path(self.save_dir).glob("*.pt"))) // 2
         if number_of_triplets < n_data:
+            print("generating the demonstration data...")
             self.len_data = number_of_triplets
-            for i, (output_tensor, list_of_triplets) in enumerate(
+            for i, (output_tensor, list_of_triplets) in tqdm(enumerate(
                 generate_synthetic_data(
                     tensor_size,
                     n_data - number_of_triplets,
@@ -76,7 +78,7 @@ class SyntheticDataBuffer(Dataset):
                     prob_distr,
                     random_seed, # type: ignore
                 )
-            ):
+            )):
                 torch.save(
                     output_tensor,
                     os.path.join(
